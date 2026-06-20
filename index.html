@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AsterTune</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#08080F;
+    --bg2:#0F0F1A;
+    --bg3:#151525;
+    --bg4:#1C1C30;
+    --surface:#20203A;
+    --accent:#8B5CF6;
+    --accent2:#A78BFA;
+    --accent3:#6D28D9;
+    --silver:#C4C4D4;
+    --silver2:#8888A0;
+    --white:#F0F0F8;
+    --red:#EF4444;
+    --green:#10B981;
+    --border:rgba(139,92,246,0.2);
+    --border2:rgba(196,196,212,0.1);
+    --glow:0 0 20px rgba(139,92,246,0.3);
+  }
+  html,body{height:100%;background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;overflow:hidden}
+  
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--accent3);border-radius:2px}
+  
+  /* LAYOUT */
+  #app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:1fr 90px;height:100vh}
+  
+  /* SIDEBAR */
+  #sidebar{
+    grid-row:1/2;background:var(--bg2);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;padding:0;overflow:hidden
+  }
+  .sidebar-header{padding:20px 16px 16px;border-bottom:1px solid var(--border2)}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo img{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(139,92,246,0.6))}
+  .logo-text{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;
+    background:linear-gradient(135deg,var(--accent2),var(--silver));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  
+  .sidebar-section{padding:16px 12px 8px;font-size:10px;font-weight:600;color:var(--silver2);
+    letter-spacing:1.5px;text-transform:uppercase}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;
+    border-radius:8px;margin:1px 8px;font-size:13px;color:var(--silver2);transition:.2s;position:relative}
+  .nav-item:hover{background:rgba(139,92,246,0.1);color:var(--white)}
+  .nav-item.active{background:rgba(139,92,246,0.15);color:var(--accent2)}
+  .nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:3px;height:20px;background:var(--accent);border-radius:0 2px 2px 0}
+  .nav-icon{font-size:16px;width:20px;text-align:center}
+  
+  .sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border2)}
+  .discord-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;
+    background:rgba(88,101,242,0.2);border:1px solid rgba(88,101,242,0.4);
+    border-radius:10px;cursor:pointer;transition:.2s;font-size:12px;color:#7289DA}
+  .discord-btn:hover{background:rgba(88,101,242,0.35)}
+  .discord-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--silver2);margin-top:8px;padding:0 4px}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+  
+  /* MAIN */
+  #main{grid-column:2;grid-row:1;overflow-y:auto;background:var(--bg)}
+  
+  /* TOP BAR */
+  .topbar{display:flex;align-items:center;gap:12px;padding:16px 24px;position:sticky;top:0;
+    background:rgba(8,8,15,0.9);backdrop-filter:blur(20px);z-index:10;border-bottom:1px solid var(--border2)}
+  .search-wrap{flex:1;max-width:480px;position:relative}
+  .search-wrap input{width:100%;padding:9px 16px 9px 40px;background:var(--bg3);
+    border:1px solid var(--border2);border-radius:20px;color:var(--white);font-size:13px;outline:none;
+    font-family:'Inter',sans-serif;transition:.2s}
+  .search-wrap input:focus{border-color:var(--accent);background:var(--bg4)}
+  .search-wrap input::placeholder{color:var(--silver2)}
+  .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--silver2);font-size:15px}
+  .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .qual-badge{padding:5px 12px;background:var(--surface);border:1px solid var(--border);
+    border-radius:20px;font-size:11px;color:var(--accent2);font-weight:500;cursor:pointer}
+  
+  /* CONTENT PAGES */
+  .page{display:none;padding:24px}
+  .page.active{display:block}
+  
+  /* HERO */
+  .hero{position:relative;border-radius:16px;overflow:hidden;margin-bottom:28px;
+    background:linear-gradient(135deg,rgba(139,92,246,0.3) 0%,rgba(109,40,217,0.2) 50%,rgba(8,8,15,0) 100%);
+    border:1px solid var(--border);padding:32px}
+  .hero-canvas{position:absolute;inset:0;pointer-events:none}
+  .hero-content{position:relative;z-index:1}
+  .hero-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+    background:rgba(139,92,246,0.2);border:1px solid var(--border);border-radius:20px;
+    font-size:11px;color:var(--accent2);margin-bottom:12px}
+  .hero h1{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;line-height:1.2;margin-bottom:8px;
+    background:linear-gradient(135deg,var(--white),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{color:var(--silver2);font-size:14px;margin-bottom:20px}
+  .hero-actions{display:flex;gap:10px}
+  .btn-primary{padding:10px 22px;background:var(--accent);border:none;border-radius:20px;
+    color:white;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif}
+  .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+  .btn-secondary{padding:10px 22px;background:transparent;border:1px solid var(--border);
+    border-radius:20px;color:var(--silver);font-size:13px;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif}
+  .btn-secondary:hover{background:var(--surface);border-color:var(--accent)}
+  
+  /* SECTION HEADERS */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .section-title{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--white)}
+  .see-all{font-size:12px;color:var(--accent2);cursor:pointer}
+  .see-all:hover{color:var(--white)}
+  
+  /* CARDS GRID */
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:28px}
+  .card{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;
+    overflow:hidden;cursor:pointer;transition:.25s;position:relative}
+  .card:hover{transform:translateY(-4px);border-color:var(--border);background:var(--bg4)}
+  .card:hover .card-play{opacity:1;transform:translateY(0)}
+  .card-img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surface);display:flex;
+    align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .card-img img{width:100%;height:100%;object-fit:cover}
+  .card-img-placeholder{width:100%;aspect-ratio:1;background:linear-gradient(135deg,var(--bg4),var(--surface));
+    display:flex;align-items:center;justify-content:center;font-size:32px;position:relative}
+  .card-play{position:absolute;bottom:8px;right:8px;width:36px;height:36px;
+    background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;
+    opacity:0;transform:translateY(4px);transition:.2s;box-shadow:var(--glow)}
+  .card-play svg{width:14px;fill:white;margin-left:2px}
+  .card-body{padding:10px 12px}
+  .card-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+  .card-sub{font-size:11px;color:var(--silver2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  
+  /* TRACK LIST */
+  .track-list{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:28px}
+  .track-item{display:grid;grid-template-columns:36px 1fr auto auto;align-items:center;gap:12px;
+    padding:10px 16px;border-bottom:1px solid var(--border2);cursor:pointer;transition:.15s}
+  .track-item:last-child{border-bottom:none}
+  .track-item:hover{background:rgba(139,92,246,0.08)}
+  .track-item.playing{background:rgba(139,92,246,0.12)}
+  .track-num{font-size:13px;color:var(--silver2);text-align:center;min-width:20px}
+  .track-item.playing .track-num{color:var(--accent2)}
+  .track-info{display:flex;align-items:center;gap:10px;overflow:hidden}
+  .track-cover{width:36px;height:36px;border-radius:6px;object-fit:cover;background:var(--surface);flex-shrink:0}
+  .track-cover-ph{width:36px;height:36px;border-radius:6px;background:var(--surface);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:14px}
+  .track-texts{overflow:hidden}
+  .track-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track-item.playing .track-name{color:var(--accent2)}
+  .track-artist{font-size:11px;color:var(--silver2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track-duration{font-size:12px;color:var(--silver2);white-space:nowrap}
+  .track-like{padding:4px 8px;cursor:pointer;color:var(--silver2);font-size:14px;transition:.15s;background:none;border:none}
+  .track-like:hover{color:var(--red)}
+  .track-like.liked{color:var(--red)}
+  
+  /* PLAYER */
+  #player{
+    grid-column:1/3;grid-row:2;
+    background:rgba(10,10,18,0.97);backdrop-filter:blur(30px);
+    border-top:1px solid var(--border);
+    display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;
+    padding:0 24px;gap:16px
+  }
+  .player-track{display:flex;align-items:center;gap:12px;min-width:0}
+  .player-cover{width:52px;height:52px;border-radius:8px;object-fit:cover;background:var(--surface);flex-shrink:0;
+    box-shadow:0 0 16px rgba(139,92,246,0.4)}
+  .player-cover-ph{width:52px;height:52px;border-radius:8px;background:var(--surface);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:20px}
+  .player-info{overflow:hidden}
+  .player-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .player-artist{font-size:11px;color:var(--silver2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .player-heart{background:none;border:none;color:var(--silver2);cursor:pointer;padding:6px;font-size:16px;transition:.15s;flex-shrink:0}
+  .player-heart:hover,.player-heart.liked{color:var(--red)}
+  
+  .player-controls{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .ctrl-btns{display:flex;align-items:center;gap:4px}
+  .ctrl-btn{background:none;border:none;color:var(--silver2);cursor:pointer;padding:7px;
+    font-size:16px;transition:.15s;border-radius:50%}
+  .ctrl-btn:hover{color:var(--white);background:rgba(255,255,255,0.08)}
+  .ctrl-btn.active{color:var(--accent2)}
+  .play-btn{background:var(--accent);border:none;color:white;cursor:pointer;
+    width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    transition:.2s;box-shadow:0 0 14px rgba(139,92,246,0.5);font-size:14px}
+  .play-btn:hover{background:var(--accent2);transform:scale(1.05)}
+  .progress-wrap{display:flex;align-items:center;gap:8px;width:100%}
+  .time-label{font-size:11px;color:var(--silver2);white-space:nowrap;min-width:32px}
+  .progress-bar{flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;
+    cursor:pointer;position:relative;transition:.1s}
+  .progress-bar:hover{height:6px}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    border-radius:2px;transition:.1s;position:relative}
+  .progress-thumb{position:absolute;right:-6px;top:50%;transform:translateY(-50%);
+    width:12px;height:12px;background:white;border-radius:50%;opacity:0;transition:.15s}
+  .progress-bar:hover .progress-thumb{opacity:1}
+  
+  .player-right{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+  .vol-btn{background:none;border:none;color:var(--silver2);cursor:pointer;font-size:15px;padding:6px}
+  .vol-btn:hover{color:var(--white)}
+  .vol-slider{width:80px;height:4px;-webkit-appearance:none;background:rgba(255,255,255,0.15);
+    border-radius:2px;cursor:pointer;outline:none}
+  .vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent2)}
+  .discord-rp{display:flex;align-items:center;gap:6px;padding:6px 12px;
+    background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.3);
+    border-radius:20px;font-size:11px;color:#7289DA;cursor:pointer;transition:.2s;white-space:nowrap}
+  .discord-rp:hover{background:rgba(88,101,242,0.3)}
+  .rp-dot{width:6px;height:6px;border-radius:50%;background:#57F287;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  
+  /* SEARCH RESULTS */
+  .search-results{display:none}
+  .search-results.visible{display:block}
+  
+  /* VISUALIZER */
+  #visualizer{position:fixed;bottom:90px;left:220px;right:0;height:60px;pointer-events:none;z-index:5;opacity:0.4}
+  
+  /* LOADING */
+  .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--silver2);
+    flex-direction:column;gap:12px}
+  .spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--accent);
+    border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  
+  /* TOAST */
+  .toast{position:fixed;top:20px;right:20px;padding:12px 18px;background:var(--surface);
+    border:1px solid var(--border);border-radius:10px;font-size:13px;z-index:9999;
+    transform:translateX(120%);transition:.3s;max-width:280px;display:flex;align-items:center;gap:8px}
+  .toast.show{transform:translateX(0)}
+  .toast-icon{font-size:16px}
+  
+  /* DISCORD MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;
+    align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;
+    width:480px;max-width:90vw}
+  .modal h2{font-family:'Orbitron',sans-serif;font-size:18px;margin-bottom:6px;color:var(--white)}
+  .modal p{font-size:13px;color:var(--silver2);margin-bottom:20px;line-height:1.6}
+  .rp-preview{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-bottom:20px}
+  .rp-preview-title{font-size:11px;font-weight:600;color:var(--silver2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+  .rp-card{display:flex;gap:12px;align-items:flex-start}
+  .rp-app-icon{width:52px;height:52px;border-radius:8px;background:linear-gradient(135deg,var(--accent3),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:white;text-align:center;line-height:1.2}
+  .rp-texts{flex:1}
+  .rp-app-name{font-size:13px;font-weight:600;color:var(--white)}
+  .rp-detail1{font-size:12px;color:var(--silver2);margin-top:2px}
+  .rp-detail2{font-size:12px;color:var(--silver2);margin-top:2px}
+  .rp-elapsed{font-size:11px;color:var(--silver2);margin-top:4px;opacity:.7}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .btn-discord{padding:10px 20px;background:#5865F2;border:none;border-radius:8px;
+    color:white;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:500}
+  .btn-close{padding:10px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;
+    color:var(--silver);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif}
+  
+  /* GENRES */
+  .genre-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:28px}
+  .genre-pill{padding:14px 16px;border-radius:12px;cursor:pointer;transition:.2s;text-align:center;
+    font-size:12px;font-weight:600;border:1px solid transparent}
+  .genre-pill:hover{transform:translateY(-2px);filter:brightness(1.2)}
+  
+  /* CANVAS NEBULA */
+  #nebula{position:absolute;inset:0;pointer-events:none}
+  
+  /* LIKED PAGE */
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:60px 20px;text-align:center;color:var(--silver2)}
+  .empty-state .icon{font-size:48px;margin-bottom:16px;opacity:.5}
+  .empty-state h3{font-size:16px;color:var(--white);margin-bottom:8px}
+  .empty-state p{font-size:13px;line-height:1.6}
+  
+  /* TRENDING BADGE */
+  .trending-badge{position:absolute;top:6px;left:6px;padding:2px 8px;background:rgba(239,68,68,0.85);
+    border-radius:20px;font-size:10px;font-weight:600;color:white}
+</style>
+</head>
+<body>
+
+<canvas id="visualizer"></canvas>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <img id="logo-img" src="/logo.png" alt="AsterTune">
+        <span class="logo-text">AsterTune</span>
+      </div>
+    </div>
+    
+    <div class="sidebar-section">Menú</div>
+    <div class="nav-item active" onclick="showPage('home')">
+      <span class="nav-icon">🏠</span> Inicio
+    </div>
+    <div class="nav-item" onclick="showPage('search')">
+      <span class="nav-icon">🔍</span> Buscar
+    </div>
+    <div class="nav-item" onclick="showPage('liked')">
+      <span class="nav-icon">❤️</span> Me gusta
+    </div>
+    <div class="nav-item" onclick="showPage('genres')">
+      <span class="nav-icon">🎭</span> Géneros
+    </div>
+    <div class="nav-item" onclick="showPage('trending')">
+      <span class="nav-icon">🔥</span> Tendencias
+    </div>
+    
+    <div class="sidebar-section">Descubrir</div>
+    <div class="nav-item" onclick="showPage('new')">
+      <span class="nav-icon">✨</span> Novedades
+    </div>
+    <div class="nav-item" onclick="showPage('charts')">
+      <span class="nav-icon">📊</span> Charts
+    </div>
+    <div class="nav-item" onclick="showPage('radio')">
+      <span class="nav-icon">📻</span> Radio
+    </div>
+    
+    <div class="sidebar-footer">
+      <div class="discord-btn" onclick="openDiscordModal()">
+        <span>🎮</span>
+        <div>
+          <div style="font-weight:600">Discord Rich Presence</div>
+          <div style="font-size:10px;opacity:.7">Mostrar en tu perfil</div>
+        </div>
+      </div>
+      <div class="discord-status">
+        <div class="status-dot" id="discord-dot" style="background:#888"></div>
+        <span id="discord-status-text">Sin conectar</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- MAIN CONTENT -->
+  <div id="main">
+    <div class="topbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Buscar canciones, artistas, álbumes..." 
+          oninput="handleSearch(this.value)" onkeydown="if(event.key==='Enter')doSearch()">
+      </div>
+      <div class="topbar-right">
+        <div class="qual-badge">▶ Audio completo</div>
+        <div class="qual-badge" id="source-badge">Jamendo · Gratis</div>
+      </div>
+    </div>
+    
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+      <div class="hero">
+        <canvas id="nebula"></canvas>
+        <div class="hero-content">
+          <div class="hero-tag">✦ Música libre en el cosmos</div>
+          <h1>Tu universo musical<br>sin límites</h1>
+          <p>Millones de canciones completas. 100% gratis. Disponible ahora.</p>
+          <div class="hero-actions">
+            <button class="btn-primary" onclick="playRadio()">▶ Reproducir mix</button>
+            <button class="btn-secondary" onclick="showPage('genres')">Explorar géneros</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section-header">
+        <div class="section-title">🔥 Trending ahora</div>
+        <span class="see-all" onclick="showPage('trending')">Ver todo →</span>
+      </div>
+      <div id="trending-grid" class="cards-grid">
+        <div class="loading"><div class="spinner"></div><span>Cargando...</span></div>
+      </div>
+      
+      <div class="section-header">
+        <div class="section-title">✨ Novedades</div>
+        <span class="see-all" onclick="showPage('new')">Ver todo →</span>
+      </div>
+      <div id="new-grid" class="cards-grid">
+        <div class="loading"><div class="spinner"></div><span>Cargando...</span></div>
+      </div>
+      
+      <div class="section-header">
+        <div class="section-title">🎵 Escuchar ahora</div>
+      </div>
+      <div class="track-list" id="home-tracks">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    
+    <!-- SEARCH PAGE -->
+    <div class="page" id="page-search">
+      <div style="padding:4px 0 20px">
+        <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px;margin-bottom:4px">Buscar</div>
+        <div style="color:var(--silver2);font-size:13px">Encuentra cualquier canción, artista o álbum</div>
+      </div>
+      <div id="search-empty">
+        <div class="section-header"><div class="section-title">Géneros populares</div></div>
+        <div class="genre-grid" id="search-genres"></div>
+      </div>
+      <div class="search-results" id="search-results-container">
+        <div class="section-header">
+          <div class="section-title" id="results-title">Resultados</div>
+        </div>
+        <div class="track-list" id="search-track-list"></div>
+      </div>
+    </div>
+    
+    <!-- LIKED PAGE -->
+    <div class="page" id="page-liked">
+      <div style="padding:4px 0 20px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:32px">❤️</span>
+        <div>
+          <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px">Canciones que te gustan</div>
+          <div style="color:var(--silver2);font-size:13px" id="liked-count">0 canciones</div>
+        </div>
+      </div>
+      <div id="liked-container">
+        <div class="empty-state">
+          <div class="icon">💔</div>
+          <h3>Aún no hay canciones</h3>
+          <p>Presiona ❤️ en cualquier canción para guardarla aquí</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- GENRES PAGE -->
+    <div class="page" id="page-genres">
+      <div style="padding:4px 0 20px">
+        <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px;margin-bottom:4px">Géneros</div>
+        <div style="color:var(--silver2);font-size:13px">Explora por categoría musical</div>
+      </div>
+      <div class="genre-grid" id="genres-grid"></div>
+      <div class="section-header"><div class="section-title" id="genre-result-title" style="display:none"></div></div>
+      <div class="track-list" id="genre-tracks" style="display:none"></div>
+    </div>
+    
+    <!-- TRENDING PAGE -->
+    <div class="page" id="page-trending">
+      <div style="padding:4px 0 20px">
+        <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px;margin-bottom:4px">🔥 Tendencias</div>
+        <div style="color:var(--silver2);font-size:13px">Lo más escuchado ahora mismo</div>
+      </div>
+      <div class="cards-grid" id="trending-page-grid">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    
+    <!-- NEW PAGE -->
+    <div class="page" id="page-new">
+      <div style="padding:4px 0 20px">
+        <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px;margin-bottom:4px">✨ Novedades</div>
+        <div style="color:var(--silver2);font-size:13px">Lanzamientos recientes</div>
+      </div>
+      <div class="cards-grid" id="new-page-grid">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    
+    <!-- CHARTS PAGE -->
+    <div class="page" id="page-charts">
+      <div style="padding:4px 0 20px">
+        <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px;margin-bottom:4px">📊 Charts</div>
+        <div style="color:var(--silver2);font-size:13px">Top canciones globales</div>
+      </div>
+      <div class="track-list" id="charts-tracks">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    
+    <!-- RADIO PAGE -->
+    <div class="page" id="page-radio">
+      <div style="padding:4px 0 20px">
+        <div class="section-title" style="font-family:'Orbitron',sans-serif;font-size:22px;margin-bottom:4px">📻 Radio</div>
+        <div style="color:var(--silver2);font-size:13px">Estaciones por género</div>
+      </div>
+      <div class="genre-grid" id="radio-grid"></div>
+    </div>
+  </div>
+  
+  <!-- PLAYER BAR -->
+  <div id="player">
+    <div class="player-track">
+      <div class="player-cover-ph" id="player-cover">🎵</div>
+      <div class="player-info">
+        <div class="player-name" id="player-name">Ninguna canción</div>
+        <div class="player-artist" id="player-artist">Selecciona algo para escuchar</div>
+      </div>
+      <button class="player-heart" id="player-heart" onclick="toggleCurrentLike()">♡</button>
+    </div>
+    
+    <div class="player-controls">
+      <div class="ctrl-btns">
+        <button class="ctrl-btn" id="shuffle-btn" onclick="toggleShuffle()" title="Aleatorio">🔀</button>
+        <button class="ctrl-btn" onclick="prevTrack()" title="Anterior">⏮</button>
+        <button class="play-btn" id="play-btn" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" onclick="nextTrack()" title="Siguiente">⏭</button>
+        <button class="ctrl-btn" id="repeat-btn" onclick="toggleRepeat()" title="Repetir">🔁</button>
+      </div>
+      <div class="progress-wrap">
+        <span class="time-label" id="time-current">0:00</span>
+        <div class="progress-bar" id="progress-bar" onclick="seekTo(event)">
+          <div class="progress-fill" id="progress-fill" style="width:0%">
+            <div class="progress-thumb"></div>
+          </div>
+        </div>
+        <span class="time-label" style="text-align:right" id="time-total">0:00</span>
+      </div>
+    </div>
+    
+    <div class="player-right">
+      <button class="vol-btn" onclick="toggleMute()">🔊</button>
+      <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+      <div class="discord-rp" id="discord-rp-btn" onclick="openDiscordModal()">
+        <div class="rp-dot"></div>
+        Discord RP
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DISCORD MODAL -->
+<div class="modal-overlay" id="discord-modal">
+  <div class="modal">
+    <h2>🎮 Discord Rich Presence</h2>
+    <p>AsterTune puede mostrar lo que estás escuchando en tu perfil de Discord en tiempo real. Activa el Rich Presence para que tus amigos vean tu música.</p>
+    <div class="rp-preview">
+      <div class="rp-preview-title">Vista previa en Discord</div>
+      <div class="rp-card">
+        <div class="rp-app-icon">ASTER<br>TUNE</div>
+        <div class="rp-texts">
+          <div class="rp-app-name">AsterTune</div>
+          <div class="rp-detail1" id="rp-detail1">🎵 Escuchando: —</div>
+          <div class="rp-detail2" id="rp-detail2">👤 —</div>
+          <div class="rp-elapsed" id="rp-elapsed">0:00 / 0:00</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.3);border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:var(--silver2);line-height:1.7">
+      <strong style="color:#7289DA">💡 Para el cliente desktop (.exe):</strong><br>
+      Descarga AsterTune Desktop para Rich Presence completo via Discord IPC.<br>
+      <strong style="color:#7289DA">🌐 Para la web:</strong><br>
+      Usamos discord-rpc-web. Activa "Estado personalizado" en Discord y copia el estado generado.
+    </div>
+    <div id="rp-web-status" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;font-family:monospace;color:var(--accent2)"></div>
+    <div class="modal-actions">
+      <button class="btn-close" onclick="closeDiscordModal()">Cerrar</button>
+      <button class="btn-discord" onclick="activateDiscordRP()">🎮 Activar Rich Presence</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Mensaje</span>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  queue: [],
+  currentIdx: -1,
+  isPlaying: false,
+  shuffle: false,
+  repeat: false,
+  liked: JSON.parse(localStorage.getItem('at_liked')||'[]'),
+  volume: 0.8,
+  muted: false,
+  discordActive: false,
+  discordStartTime: null,
+};
+
+const audio = new Audio();
+audio.volume = 0.8;
+audio.crossOrigin = 'anonymous';
+
+// LOGO - fallback if /logo.png fails to load for any reason
+document.getElementById('logo-img').onerror = function(){
+  this.style.display='none';
+  this.parentElement.insertAdjacentHTML('afterbegin','<div style="width:36px;height:36px;background:linear-gradient(135deg,#7B5CF6,#A78BFA);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Orbitron,sans-serif;font-size:10px;color:white;font-weight:700;flex-shrink:0">AT</div>');
+};
+
+// ============================================================
+// API FUNCTIONS
+// ============================================================
+// Music engine: Jamendo (free, full-length, royalty-free/CC tracks) via our
+// own serverless endpoint at /api/jamendo, so the client_id stays server-side.
+async function jamendoFetch(params={}){
+  const qs = new URLSearchParams(params);
+  const res = await fetch(`/api/jamendo?${qs.toString()}`);
+  if(!res.ok) throw new Error('API error '+res.status);
+  const data = await res.json();
+  return (data && data.results) || [];
+}
+
+async function searchTracks(term, limit=24){
+  return jamendoFetch({ search: term, limit });
+}
+
+async function getPopular(limit=24, order='popularity_month'){
+  return jamendoFetch({ limit, order });
+}
+
+async function getNewReleases(limit=24){
+  return jamendoFetch({ limit, order:'releasedate_desc' });
+}
+
+async function getByTag(tag, limit=24){
+  return jamendoFetch({ tags: tag, limit, order:'popularity_total' });
+}
+
+function formatTrack(t){
+  const genres = t.musicinfo && t.musicinfo.tags && t.musicinfo.tags.genres;
+  return {
+    id: t.id || Math.random(),
+    name: t.name || 'Unknown',
+    artist: t.artist_name || 'Unknown Artist',
+    album: t.album_name || '',
+    cover: t.image || t.album_image || '',
+    preview: t.audio || null, // FULL track stream, real duration — not a 30s preview
+    duration: Number(t.duration) || 0,
+    genre: (genres && genres[0]) || '',
+  };
+}
+
+// ============================================================
+// RENDER HELPERS
+// ============================================================
+function coverEl(url, size='card'){
+  if(url) return `<img src="${url}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='<div style=width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px>🎵</div>'">`;
+  return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:${size==='card'?'28':'16'}px">🎵</div>`;
+}
+
+function renderCards(tracks, containerId){
+  const el = document.getElementById(containerId);
+  if(!tracks.length){el.innerHTML='<div class="loading">Sin resultados</div>';return;}
+  el.innerHTML = tracks.map((t,i)=>`
+    <div class="card" onclick="playTrack(${i},'${containerId}')">
+      <div class="card-img">
+        ${coverEl(t.cover)}
+        ${i<3?'<div class="trending-badge">#'+(i+1)+'</div>':''}
+        <div class="card-play" onclick="event.stopPropagation();playTrack(${i},'${containerId}')">
+          <svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z"/></svg>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(t.name)}</div>
+        <div class="card-sub">${esc(t.artist)}</div>
+      </div>
+    </div>
+  `).join('');
+  // Store tracks for later playback
+  window['queue_'+containerId] = tracks;
+}
+
+function renderTrackList(tracks, containerId){
+  const el = document.getElementById(containerId);
+  if(!tracks.length){el.innerHTML='<div class="loading">Sin resultados</div>';return;}
+  el.innerHTML = tracks.map((t,i)=>`
+    <div class="track-item" id="ti-${containerId}-${i}" onclick="playTrack(${i},'${containerId}')">
+      <div class="track-num">${i+1}</div>
+      <div class="track-info">
+        <div class="track-cover-ph">${t.cover?`<img src="${t.cover}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" loading="lazy">`:'🎵'}</div>
+        <div class="track-texts">
+          <div class="track-name">${esc(t.name)}</div>
+          <div class="track-artist">${esc(t.artist)}</div>
+        </div>
+      </div>
+      <button class="track-like ${isLiked(t.id)?'liked':''}" onclick="event.stopPropagation();toggleLike(${i},'${containerId}')">${isLiked(t.id)?'❤️':'🤍'}</button>
+      <div class="track-duration">${fmtTime(t.duration)}</div>
+    </div>
+  `).join('');
+  window['queue_'+containerId] = tracks;
+}
+
+function esc(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmtTime(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return `${m}:${sec.toString().padStart(2,'0')}`}
+
+// ============================================================
+// PLAYBACK
+// ============================================================
+function playTrack(idx, queueId){
+  const tracks = window['queue_'+queueId] || state.queue;
+  if(!tracks[idx]) return;
+  state.queue = tracks;
+  state.currentQueueId = queueId;
+  state.currentIdx = idx;
+  loadAndPlay(tracks[idx]);
+}
+
+function loadAndPlay(track){
+  if(!track.preview){
+    showToast('⚠️','Audio no disponible para esta canción');
+    nextTrack();
+    return;
+  }
+  audio.src = track.preview;
+  audio.play().catch(e=>console.log(e));
+  state.isPlaying = true;
+  updatePlayerUI(track);
+  updatePlayBtn();
+  highlightCurrentTrack();
+  updateDiscordRP(track);
+}
+
+function updatePlayerUI(track){
+  document.getElementById('player-name').textContent = track.name;
+  document.getElementById('player-artist').textContent = track.artist;
+  const cover = document.getElementById('player-cover');
+  if(track.cover){
+    cover.outerHTML = `<img class="player-cover" id="player-cover" src="${track.cover}" onerror="this.outerHTML='<div class=player-cover-ph id=player-cover>🎵</div>'">`;
+  } else {
+    const el = document.getElementById('player-cover');
+    if(el.tagName==='IMG'){el.outerHTML='<div class="player-cover-ph" id="player-cover">🎵</div>';}
+  }
+  document.getElementById('time-total').textContent = fmtTime(track.duration||0);
+  const heart = document.getElementById('player-heart');
+  heart.textContent = isLiked(track.id)?'❤️':'🤍';
+  heart.classList.toggle('liked', isLiked(track.id));
+  document.title = `${track.name} — ${track.artist} | AsterTune`;
+}
+
+function highlightCurrentTrack(){
+  document.querySelectorAll('.track-item').forEach(el=>el.classList.remove('playing'));
+  const qId = state.currentQueueId;
+  const el = document.getElementById(`ti-${qId}-${state.currentIdx}`);
+  if(el){el.classList.add('playing');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+
+function togglePlay(){
+  if(!audio.src) return;
+  if(state.isPlaying){audio.pause();state.isPlaying=false;}
+  else{audio.play();state.isPlaying=true;}
+  updatePlayBtn();
+}
+
+function updatePlayBtn(){
+  document.getElementById('play-btn').textContent = state.isPlaying?'⏸':'▶';
+}
+
+function nextTrack(){
+  if(!state.queue.length) return;
+  let next = state.currentIdx+1;
+  if(state.shuffle) next = Math.floor(Math.random()*state.queue.length);
+  if(next>=state.queue.length) next=0;
+  state.currentIdx = next;
+  loadAndPlay(state.queue[next]);
+}
+
+function prevTrack(){
+  if(!state.queue.length) return;
+  let prev = state.currentIdx-1;
+  if(prev<0) prev = state.queue.length-1;
+  state.currentIdx = prev;
+  loadAndPlay(state.queue[prev]);
+}
+
+function seekTo(e){
+  const bar = document.getElementById('progress-bar');
+  const pct = e.offsetX / bar.offsetWidth;
+  audio.currentTime = pct * (audio.duration||0);
+}
+
+function toggleShuffle(){
+  state.shuffle = !state.shuffle;
+  document.getElementById('shuffle-btn').classList.toggle('active',state.shuffle);
+  showToast(state.shuffle?'🔀':'➡️', state.shuffle?'Aleatorio activado':'Aleatorio desactivado');
+}
+
+function toggleRepeat(){
+  state.repeat = !state.repeat;
+  audio.loop = state.repeat;
+  document.getElementById('repeat-btn').classList.toggle('active',state.repeat);
+  showToast(state.repeat?'🔁':'➡️', state.repeat?'Repetición activada':'Repetición desactivada');
+}
+
+function setVolume(v){
+  state.volume = v/100;
+  audio.volume = state.muted?0:state.volume;
+}
+
+function toggleMute(){
+  state.muted = !state.muted;
+  audio.volume = state.muted?0:state.volume;
+  document.querySelector('.vol-btn').textContent = state.muted?'🔇':'🔊';
+}
+
+audio.addEventListener('timeupdate',()=>{
+  if(!audio.duration) return;
+  const pct = (audio.currentTime/audio.duration)*100;
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('time-current').textContent = fmtTime(audio.currentTime);
+});
+audio.addEventListener('ended',()=>{if(!state.repeat)nextTrack();});
+
+// ============================================================
+// VISUALIZER CANVAS
+// ============================================================
+const visCanvas = document.getElementById('visualizer');
+const visCtx = visCanvas.getContext('2d');
+let analyser, dataArray, visAnimId;
+let audioCtx, sourceNode;
+
+function setupVisualizer(){
+  if(audioCtx) return;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    sourceNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    drawVisualizer();
+  }catch(e){console.log('Visualizer init failed:',e);}
+}
+
+function drawVisualizer(){
+  visAnimId = requestAnimationFrame(drawVisualizer);
+  resizeVis();
+  visCtx.clearRect(0,0,visCanvas.width,visCanvas.height);
+  if(!analyser){return;}
+  analyser.getByteFrequencyData(dataArray);
+  const bars = dataArray.length;
+  const barW = visCanvas.width/bars;
+  for(let i=0;i<bars;i++){
+    const h = (dataArray[i]/255)*visCanvas.height;
+    const g = visCtx.createLinearGradient(0,visCanvas.height,0,visCanvas.height-h);
+    g.addColorStop(0,'rgba(139,92,246,0.8)');
+    g.addColorStop(1,'rgba(167,139,250,0.2)');
+    visCtx.fillStyle = g;
+    visCtx.fillRect(i*barW,visCanvas.height-h,barW-1,h);
+  }
+}
+
+function resizeVis(){
+  const sidebar = 220;
+  visCanvas.width = window.innerWidth - sidebar;
+  visCanvas.height = 60;
+}
+
+audio.addEventListener('play',()=>{
+  setupVisualizer();
+  if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume();
+});
+
+// NEBULA HERO CANVAS
+function drawNebula(){
+  const c = document.getElementById('nebula');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  c.width = c.parentElement.offsetWidth;
+  c.height = c.parentElement.offsetHeight;
+  const particles = [];
+  for(let i=0;i<80;i++){
+    particles.push({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      r:Math.random()*2+0.5, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
+      a:Math.random()
+    });
+  }
+  function frame(){
+    ctx.clearRect(0,0,c.width,c.height);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=c.width; if(p.x>c.width)p.x=0;
+      if(p.y<0)p.y=c.height; if(p.y>c.height)p.y=0;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(167,139,250,${p.a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+setTimeout(drawNebula, 100);
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(n=>{if(n.textContent.toLowerCase().includes(id)||n.getAttribute('onclick')?.includes(id))n.classList.add('active');});
+  
+  if(id==='home' && !window.homeLoaded){loadHome();window.homeLoaded=true;}
+  if(id==='trending' && !window.trendingLoaded){loadTrendingPage();}
+  if(id==='new' && !window.newLoaded){loadNewPage();}
+  if(id==='charts' && !window.chartsLoaded){loadCharts();}
+  if(id==='liked'){renderLiked();}
+  if(id==='search'){renderSearchGenres();}
+  if(id==='genres'){renderGenresPage();}
+  if(id==='radio'){renderRadio();}
+}
+
+// ============================================================
+// HOME LOAD
+// ============================================================
+async function loadHome(){
+  try{
+    const [trending, newTracks, featured] = await Promise.all([
+      getPopular(8, 'popularity_week'),
+      getNewReleases(8),
+      getPopular(15, 'popularity_month'),
+    ]);
+    renderCards(trending.map(formatTrack), 'trending-grid');
+    renderCards(newTracks.map(formatTrack), 'new-grid');
+    renderTrackList(featured.map(formatTrack), 'home-tracks');
+  }catch(e){
+    document.getElementById('trending-grid').innerHTML='<div class="loading">Error cargando. Reintenta.</div>';
+  }
+}
+
+async function loadTrendingPage(){
+  window.trendingLoaded = true;
+  const tracks = await getPopular(24, 'popularity_week').catch(()=>[]);
+  renderCards(tracks.map(formatTrack), 'trending-page-grid');
+}
+
+async function loadNewPage(){
+  window.newLoaded = true;
+  const tracks = await getNewReleases(24).catch(()=>[]);
+  renderCards(tracks.map(formatTrack), 'new-page-grid');
+}
+
+async function loadCharts(){
+  window.chartsLoaded = true;
+  const tracks = await getPopular(40, 'popularity_total').catch(()=>[]);
+  renderTrackList(tracks.map(formatTrack), 'charts-tracks');
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+let searchTimeout;
+function handleSearch(val){
+  clearTimeout(searchTimeout);
+  if(!val.trim()){
+    document.getElementById('search-results-container').classList.remove('visible');
+    document.getElementById('search-empty').style.display='block';
+    return;
+  }
+  searchTimeout = setTimeout(()=>doSearch(val), 500);
+}
+
+async function doSearch(val){
+  val = val || document.getElementById('search-input').value;
+  if(!val.trim()) return;
+  showPage('search');
+  document.getElementById('search-empty').style.display='none';
+  document.getElementById('search-results-container').classList.add('visible');
+  document.getElementById('results-title').textContent = `Resultados para "${val}"`;
+  document.getElementById('search-track-list').innerHTML='<div class="loading"><div class="spinner"></div><span>Buscando...</span></div>';
+  const results = await searchTracks(val, 30).catch(()=>[]);
+  const tracks = results.map(formatTrack);
+  renderTrackList(tracks, 'search-track-list');
+}
+
+// ============================================================
+// GENRES
+// ============================================================
+const GENRES = [
+  {name:'Pop',tag:'pop',emoji:'🎤',color:'#7B5CF6',bg:'rgba(123,92,246,0.2)'},
+  {name:'Rock',tag:'rock',emoji:'🎸',color:'#EF4444',bg:'rgba(239,68,68,0.2)'},
+  {name:'Hip-Hop',tag:'hiphop',emoji:'🎧',color:'#F59E0B',bg:'rgba(245,158,11,0.2)'},
+  {name:'Electronic',tag:'electronic',emoji:'⚡',color:'#06B6D4',bg:'rgba(6,182,212,0.2)'},
+  {name:'R&B',tag:'soul',emoji:'💜',color:'#8B5CF6',bg:'rgba(139,92,246,0.2)'},
+  {name:'Jazz',tag:'jazz',emoji:'🎷',color:'#10B981',bg:'rgba(16,185,129,0.2)'},
+  {name:'Reggaeton',tag:'latin',emoji:'🔥',color:'#F97316',bg:'rgba(249,115,22,0.2)'},
+  {name:'Classical',tag:'classical',emoji:'🎻',color:'#C4C4D4',bg:'rgba(196,196,212,0.2)'},
+  {name:'Latin',tag:'latin',emoji:'💃',color:'#EC4899',bg:'rgba(236,72,153,0.2)'},
+  {name:'K-Pop',tag:'pop',emoji:'⭐',color:'#A78BFA',bg:'rgba(167,139,250,0.2)'},
+  {name:'Metal',tag:'metal',emoji:'🤘',color:'#6B7280',bg:'rgba(107,114,128,0.2)'},
+  {name:'Country',tag:'country',emoji:'🤠',color:'#92400E',bg:'rgba(146,64,14,0.2)'},
+];
+
+function renderSearchGenres(){
+  document.getElementById('search-genres').innerHTML = GENRES.map(g=>`
+    <div class="genre-pill" style="background:${g.bg};border-color:${g.color}40;color:${g.color}" 
+      onclick="document.getElementById('search-input').value='${g.name}';doSearch('${g.tag}')">
+      ${g.emoji} ${g.name}
+    </div>
+  `).join('');
+}
+
+function renderGenresPage(){
+  document.getElementById('genres-grid').innerHTML = GENRES.map(g=>`
+    <div class="genre-pill" style="background:${g.bg};border-color:${g.color}40;color:${g.color}" 
+      onclick="loadGenre('${g.tag}','${g.emoji}','${g.name}')">
+      ${g.emoji} ${g.name}
+    </div>
+  `).join('');
+}
+
+async function loadGenre(tag, emoji, label){
+  const titleEl = document.getElementById('genre-result-title');
+  const tracksEl = document.getElementById('genre-tracks');
+  titleEl.style.display='block';
+  tracksEl.style.display='block';
+  titleEl.textContent = `${emoji} ${label||tag}`;
+  tracksEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  const results = await getByTag(tag, 25).catch(()=>[]);
+  renderTrackList(results.map(formatTrack), 'genre-tracks');
+}
+
+function renderRadio(){
+  document.getElementById('radio-grid').innerHTML = GENRES.map(g=>`
+    <div class="genre-pill" style="background:${g.bg};border-color:${g.color}40;color:${g.color};padding:18px;" 
+      onclick="playRadioGenre('${g.tag}','${g.emoji}','${g.name}')">
+      ${g.emoji}<br><span style="font-size:13px;margin-top:6px;display:block">${g.name} Radio</span>
+    </div>
+  `).join('');
+}
+
+async function playRadioGenre(tag, emoji, label){
+  showToast(emoji, `Cargando radio ${label||tag}...`);
+  const results = await getByTag(tag, 30).catch(()=>[]);
+  const tracks = results.map(formatTrack).filter(t=>t.preview);
+  if(!tracks.length){showToast('⚠️','Sin canciones disponibles');return;}
+  window['queue_radio'] = tracks;
+  state.queue = tracks;
+  state.currentQueueId = 'radio';
+  state.currentIdx = 0;
+  state.shuffle = true;
+  document.getElementById('shuffle-btn').classList.add('active');
+  loadAndPlay(tracks[0]);
+}
+
+async function playRadio(){
+  playRadioGenre('pop', '🎵', 'Mix');
+}
+
+// ============================================================
+// LIKES
+// ============================================================
+function isLiked(id){return state.liked.some(t=>t.id===id)}
+
+function toggleLike(idx, queueId){
+  const tracks = window['queue_'+queueId];
+  if(!tracks) return;
+  const track = tracks[idx];
+  if(isLiked(track.id)){
+    state.liked = state.liked.filter(t=>t.id!==track.id);
+    showToast('🤍','Eliminado de Me gusta');
+  }else{
+    state.liked.push(track);
+    showToast('❤️','Añadido a Me gusta');
+  }
+  localStorage.setItem('at_liked', JSON.stringify(state.liked));
+  // Update UI
+  const btn = document.querySelector(`#ti-${queueId}-${idx} .track-like`);
+  if(btn){btn.textContent=isLiked(track.id)?'❤️':'🤍';btn.classList.toggle('liked',isLiked(track.id));}
+  const heart = document.getElementById('player-heart');
+  if(state.queue[state.currentIdx]?.id===track.id){
+    heart.textContent=isLiked(track.id)?'❤️':'🤍';
+    heart.classList.toggle('liked',isLiked(track.id));
+  }
+}
+
+function toggleCurrentLike(){
+  const track = state.queue[state.currentIdx];
+  if(!track) return;
+  if(isLiked(track.id)){
+    state.liked = state.liked.filter(t=>t.id!==track.id);
+    showToast('🤍','Eliminado de Me gusta');
+  }else{
+    state.liked.push(track);
+    showToast('❤️','Añadido a Me gusta');
+  }
+  localStorage.setItem('at_liked', JSON.stringify(state.liked));
+  const heart = document.getElementById('player-heart');
+  heart.textContent=isLiked(track.id)?'❤️':'🤍';
+  heart.classList.toggle('liked',isLiked(track.id));
+}
+
+function renderLiked(){
+  document.getElementById('liked-count').textContent = `${state.liked.length} canciones`;
+  const container = document.getElementById('liked-container');
+  if(!state.liked.length){
+    container.innerHTML='<div class="empty-state"><div class="icon">💔</div><h3>Aún no hay canciones</h3><p>Presiona ❤️ en cualquier canción para guardarla aquí</p></div>';
+    return;
+  }
+  window['queue_liked'] = [...state.liked];
+  container.innerHTML = `<div class="track-list">
+    ${state.liked.map((t,i)=>`
+      <div class="track-item" id="ti-liked-${i}" onclick="playTrack(${i},'liked')">
+        <div class="track-num">${i+1}</div>
+        <div class="track-info">
+          <div class="track-cover-ph">${t.cover?`<img src="${t.cover}" style="width:36px;height:36px;border-radius:6px;object-fit:cover">`:'🎵'}</div>
+          <div class="track-texts">
+            <div class="track-name">${esc(t.name)}</div>
+            <div class="track-artist">${esc(t.artist)}</div>
+          </div>
+        </div>
+        <button class="track-like liked" onclick="event.stopPropagation();toggleLike(${i},'liked')">❤️</button>
+        <div class="track-duration">${fmtTime(t.duration)}</div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+// ============================================================
+// DISCORD RICH PRESENCE
+// ============================================================
+function updateDiscordRP(track){
+  document.getElementById('rp-detail1').textContent = `🎵 ${track.name}`;
+  document.getElementById('rp-detail2').textContent = `👤 ${track.artist}`;
+  state.discordStartTime = Date.now();
+  
+  if(state.discordActive){
+    // Update elapsed in modal if open
+    updateRPElapsed(track);
+    // Generate copyable status
+    generateWebRP(track);
+  }
+}
+
+function updateRPElapsed(track){
+  const elapsed = Math.floor((Date.now() - (state.discordStartTime||Date.now()))/1000);
+  document.getElementById('rp-elapsed').textContent = `${fmtTime(elapsed)} / ${fmtTime(track.duration||0)}`;
+}
+
+function generateWebRP(track){
+  const status = `🎵 Escuchando ${track.name} por ${track.artist} en AsterTune`;
+  document.getElementById('rp-web-status').style.display='block';
+  document.getElementById('rp-web-status').textContent = status;
+}
+
+function activateDiscordRP(){
+  state.discordActive = true;
+  document.getElementById('discord-dot').style.background = '#57F287';
+  document.getElementById('discord-status-text').textContent = 'Rich Presence activo';
+  document.getElementById('discord-rp-btn').style.borderColor = 'rgba(87,242,135,0.5)';
+  
+  const track = state.queue[state.currentIdx];
+  if(track) generateWebRP(track);
+  
+  showToast('🎮','Discord Rich Presence activado');
+  
+  // Try to open Discord protocol for desktop app integration
+  try{
+    // Discord RPC via IPC would need Electron — for web we use custom status
+    const discordStatus = track ? `🎵 ${track.name} — ${track.artist}` : '🎵 AsterTune';
+    document.getElementById('rp-web-status').innerHTML = `
+      <div style="margin-bottom:8px"><strong>Estado de Discord (copia y pega):</strong></div>
+      <div style="padding:8px;background:rgba(0,0,0,0.3);border-radius:6px;user-select:all">${discordStatus}</div>
+      <div style="margin-top:8px;color:var(--silver2)">💡 Pégalo en tu estado personalizado de Discord</div>
+    `;
+  }catch(e){}
+}
+
+function openDiscordModal(){
+  document.getElementById('discord-modal').classList.add('open');
+  const track = state.queue[state.currentIdx];
+  if(track) updateDiscordRP(track);
+}
+
+function closeDiscordModal(){
+  document.getElementById('discord-modal').classList.remove('open');
+}
+
+// Update RP elapsed every second
+setInterval(()=>{
+  const track = state.queue[state.currentIdx];
+  if(track && state.discordActive) updateRPElapsed(track);
+},1000);
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function showToast(icon, msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+showPage('home');
+renderSearchGenres();
+window.addEventListener('resize', resizeVis);
+resizeVis();
+drawVisualizer();
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  if(e.code==='ArrowRight'){nextTrack();}
+  if(e.code==='ArrowLeft'){prevTrack();}
+});
+</script>
+</body>
+</html>
