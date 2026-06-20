@@ -341,7 +341,7 @@
       </div>
       <div class="topbar-right">
         <div class="qual-badge">▶ Audio completo</div>
-        <div class="qual-badge" id="source-badge">Jamendo · Gratis</div>
+        <div class="qual-badge" id="source-badge">Jamendo + Audius · Gratis</div>
       </div>
     </div>
     
@@ -533,10 +533,8 @@
       </div>
     </div>
     <div style="background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.3);border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:var(--silver2);line-height:1.7">
-      <strong style="color:#7289DA">💡 Para el cliente desktop (.exe):</strong><br>
-      Descarga AsterTune Desktop para Rich Presence completo via Discord IPC.<br>
-      <strong style="color:#7289DA">🌐 Para la web:</strong><br>
-      Usamos discord-rpc-web. Activa "Estado personalizado" en Discord y copia el estado generado.
+      <strong style="color:#7289DA">⚠️ Cómo funciona realmente:</strong><br>
+      Discord no permite que ninguna página web actualice tu estado en tiempo real de forma automática (eso solo es posible para apps de escritorio conectadas por IPC local, como Spotify). Lo que sí podemos hacer 100% gratis desde el navegador: generarte el texto exacto de "ahora escuchando" para que lo pegues en tu estado personalizado de Discord en un clic.
     </div>
     <div id="rp-web-status" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;font-family:monospace;color:var(--accent2)"></div>
     <div class="modal-actions">
@@ -582,45 +580,109 @@ document.getElementById('logo-img').onerror = function(){
 // ============================================================
 // API FUNCTIONS
 // ============================================================
-// Music engine: Jamendo (free, full-length, royalty-free/CC tracks) via our
-// own serverless endpoint at /api/jamendo, so the client_id stays server-side.
+// Music engine: combines Jamendo + Audius (both free, full-length, legal
+// streaming, no login) via our own serverless endpoints, so client_id/app_name
+// stay server-side. Results from both sources are normalized and interleaved
+// for a much bigger catalog than a single source alone.
 async function jamendoFetch(params={}){
   const qs = new URLSearchParams(params);
   const res = await fetch(`/api/jamendo?${qs.toString()}`);
-  if(!res.ok) throw new Error('API error '+res.status);
+  if(!res.ok) throw new Error('Jamendo API error '+res.status);
   const data = await res.json();
   return (data && data.results) || [];
 }
 
-async function searchTracks(term, limit=24){
-  return jamendoFetch({ search: term, limit });
+async function audiusFetch(params={}){
+  const qs = new URLSearchParams(params);
+  const res = await fetch(`/api/audius?${qs.toString()}`);
+  if(!res.ok) throw new Error('Audius API error '+res.status);
+  const data = await res.json();
+  return (data && data.data) || [];
 }
 
-async function getPopular(limit=24, order='popularity_month'){
-  return jamendoFetch({ limit, order });
-}
-
-async function getNewReleases(limit=24){
-  return jamendoFetch({ limit, order:'releasedate_desc' });
-}
-
-async function getByTag(tag, limit=24){
-  return jamendoFetch({ tags: tag, limit, order:'popularity_total' });
-}
-
-function formatTrack(t){
+function formatJamendoTrack(t){
   const genres = t.musicinfo && t.musicinfo.tags && t.musicinfo.tags.genres;
   return {
-    id: t.id || Math.random(),
+    id: 'jam_'+(t.id || Math.random()),
     name: t.name || 'Unknown',
     artist: t.artist_name || 'Unknown Artist',
     album: t.album_name || '',
     cover: t.image || t.album_image || '',
-    preview: t.audio || null, // FULL track stream, real duration — not a 30s preview
+    preview: t.audio || null, // full track stream, real duration
     duration: Number(t.duration) || 0,
     genre: (genres && genres[0]) || '',
+    source: 'Jamendo',
   };
 }
+
+function formatAudiusTrack(t){
+  const art = t.artwork || {};
+  return {
+    id: 'aud_'+(t.id || Math.random()),
+    name: t.title || 'Unknown',
+    artist: (t.user && t.user.name) || 'Unknown Artist',
+    album: '',
+    cover: art['480x480'] || art['150x150'] || art['1000x1000'] || '',
+    preview: `https://api.audius.co/v1/tracks/${t.id}/stream?app_name=AsterTune`, // full track stream
+    duration: Number(t.duration) || 0,
+    genre: t.genre || '',
+    source: 'Audius',
+  };
+}
+
+function interleave(a, b){
+  const out = [];
+  const max = Math.max(a.length, b.length);
+  for(let i=0;i<max;i++){
+    if(a[i]) out.push(a[i]);
+    if(b[i]) out.push(b[i]);
+  }
+  return out;
+}
+
+async function searchTracks(term, limit=24){
+  const [j, a] = await Promise.allSettled([
+    jamendoFetch({ search: term, limit }),
+    audiusFetch({ type:'search', query: term, limit }),
+  ]);
+  const jr = j.status==='fulfilled' ? j.value.map(formatJamendoTrack) : [];
+  const ar = a.status==='fulfilled' ? a.value.map(formatAudiusTrack) : [];
+  return interleave(jr, ar);
+}
+
+async function getPopular(limit=24, order='popularity_month'){
+  const [j, a] = await Promise.allSettled([
+    jamendoFetch({ limit, order }),
+    audiusFetch({ type:'trending', time:'month', limit }),
+  ]);
+  const jr = j.status==='fulfilled' ? j.value.map(formatJamendoTrack) : [];
+  const ar = a.status==='fulfilled' ? a.value.map(formatAudiusTrack) : [];
+  return interleave(jr, ar);
+}
+
+async function getNewReleases(limit=24){
+  const [j, a] = await Promise.allSettled([
+    jamendoFetch({ limit, order:'releasedate_desc' }),
+    audiusFetch({ type:'trending', time:'week', limit }),
+  ]);
+  const jr = j.status==='fulfilled' ? j.value.map(formatJamendoTrack) : [];
+  const ar = a.status==='fulfilled' ? a.value.map(formatAudiusTrack) : [];
+  return interleave(jr, ar);
+}
+
+async function getByTag(tag, limit=24){
+  const [j, a] = await Promise.allSettled([
+    jamendoFetch({ tags: tag, limit, order:'popularity_total' }),
+    audiusFetch({ type:'search', query: tag, limit }),
+  ]);
+  const jr = j.status==='fulfilled' ? j.value.map(formatJamendoTrack) : [];
+  const ar = a.status==='fulfilled' ? a.value.map(formatAudiusTrack) : [];
+  return interleave(jr, ar);
+}
+
+// Pages call X(...).map(formatTrack) historically — keep that working by
+// making formatTrack a passthrough now that items already come normalized.
+function formatTrack(t){ return t; }
 
 // ============================================================
 // RENDER HELPERS
@@ -1123,9 +1185,7 @@ function updateRPElapsed(track){
 }
 
 function generateWebRP(track){
-  const status = `🎵 Escuchando ${track.name} por ${track.artist} en AsterTune`;
-  document.getElementById('rp-web-status').style.display='block';
-  document.getElementById('rp-web-status').textContent = status;
+  renderRPStatus(track);
 }
 
 function activateDiscordRP(){
@@ -1133,22 +1193,30 @@ function activateDiscordRP(){
   document.getElementById('discord-dot').style.background = '#57F287';
   document.getElementById('discord-status-text').textContent = 'Rich Presence activo';
   document.getElementById('discord-rp-btn').style.borderColor = 'rgba(87,242,135,0.5)';
-  
+
   const track = state.queue[state.currentIdx];
-  if(track) generateWebRP(track);
-  
   showToast('🎮','Discord Rich Presence activado');
-  
-  // Try to open Discord protocol for desktop app integration
-  try{
-    // Discord RPC via IPC would need Electron — for web we use custom status
-    const discordStatus = track ? `🎵 ${track.name} — ${track.artist}` : '🎵 AsterTune';
-    document.getElementById('rp-web-status').innerHTML = `
-      <div style="margin-bottom:8px"><strong>Estado de Discord (copia y pega):</strong></div>
-      <div style="padding:8px;background:rgba(0,0,0,0.3);border-radius:6px;user-select:all">${discordStatus}</div>
-      <div style="margin-top:8px;color:var(--silver2)">💡 Pégalo en tu estado personalizado de Discord</div>
-    `;
-  }catch(e){}
+  renderRPStatus(track);
+}
+
+function renderRPStatus(track){
+  const discordStatus = track ? `🎵 ${track.name} — ${track.artist}` : '🎵 Escuchando AsterTune';
+  const box = document.getElementById('rp-web-status');
+  box.style.display = 'block'; // BUG FIX: this was never set when no track was playing yet
+  box.innerHTML = `
+    <div style="margin-bottom:8px"><strong>Estado de Discord (copia y pega):</strong></div>
+    <div id="rp-copy-text" style="padding:8px;background:rgba(0,0,0,0.3);border-radius:6px;user-select:all">${discordStatus}</div>
+    <button onclick="copyRPStatus('${discordStatus.replace(/'/g,"\\'")}')" style="margin-top:10px;padding:7px 14px;background:#5865F2;border:none;border-radius:6px;color:white;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">📋 Copiar estado</button>
+    <div style="margin-top:8px;color:var(--silver2)">💡 Pégalo en: Discord → Tu perfil → Editar estado personalizado</div>
+  `;
+}
+
+function copyRPStatus(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>showToast('📋','Estado copiado al portapapeles')).catch(()=>showToast('⚠️','No se pudo copiar'));
+  }else{
+    showToast('⚠️','Tu navegador no soporta copiar automáticamente');
+  }
 }
 
 function openDiscordModal(){
